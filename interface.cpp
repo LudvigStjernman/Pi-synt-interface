@@ -168,8 +168,8 @@ int main()
         Vcasd(20, 405, 430, 25, pcol, scol),
         Lfosld(225, 20, 25, 305, pcol, scol);
 
-    Envelope Env1(225, 125, 550, 25), //envelopes
-        Env2(225, 125, 550, 330);
+    Envelope Env1(227, 123, 551, 26), //envelopes
+        Env2(227, 123, 551, 331);
 
     olS1.setFillColor(sf::Color(50, 50, 50)); //sätt ut allt med färger och positioner
     olS1.setPosition(0, 0);
@@ -274,6 +274,25 @@ int main()
     Env2.BindParams(&Env2sda.Value, &Env2sdd.Value, &Env2sds.Value, &Env2sdr.Value);
 
     int lfostate = 0;
+    window.clear(sf::Color(50, 50, 50)); //rita över allting med bakgrundsfärgen
+    window.draw(olS1);
+    window.draw(olS2);
+    window.draw(olS3);
+    window.draw(olS4);
+    window.draw(Env1s);
+    window.draw(Env2s);
+    window.draw(Vcfs);
+    window.draw(Vcas);
+    window.draw(vcat);
+    window.draw(lfot);
+    window.draw(vcft);
+    window.draw(env1t);
+    window.draw(env2t);
+    window.draw(E1a);
+    window.draw(E1d);
+    window.draw(E1r);
+    window.draw(E1s);
+    window.draw(lfofrt);
 
     sf::Shader Lfoshdr; //shader för att visa vågformen på LFOn
     Lfoshdr.loadFromMemory(
@@ -306,31 +325,16 @@ int main()
         Lfoshdr.setUniform("state", 2); //sätt vågform och frekvens till LFO-shadern
         Lfoshdr.setUniform("freq", Lfosld.Value + 0.1f);
 
-        window.clear(sf::Color(50, 50, 50)); //rita över allting med bakgrundsfärgen
-        window.draw(olS1); //rita ut objekt på skärmen
-        window.draw(olS2);
-        window.draw(olS3);
-        window.draw(olS4);
+        //rita ut objekt på skärmen
+        
         window.draw(Env1s);
         window.draw(Env2s);
-        window.draw(Vcfs);
-        window.draw(Vcas);
         window.draw(Lfos, &Lfoshdr);
-        window.draw(vcat);
-        window.draw(lfot);
-        window.draw(vcft);
-        window.draw(env1t);
-        window.draw(env2t);
 
         Env1sda.Draw(window);
         Env1sdd.Draw(window);
         Env1sdr.Draw(window);
         Env1sds.Draw(window);
-
-        window.draw(E1a);
-        window.draw(E1d);
-        window.draw(E1r);
-        window.draw(E1s);
 
         Env2sda.Draw(window);
         Env2sdd.Draw(window);
@@ -342,8 +346,6 @@ int main()
         window.draw(E2r);
         window.draw(E2s);
 
-        window.draw(lfofrt);
-
         Vcasd.Draw(window);
 
         Env1.Draw(window);
@@ -352,6 +354,7 @@ int main()
         Lfosld.Draw(window);
 
         window.display();
+        
     }
 
     return 0;
