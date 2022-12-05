@@ -292,6 +292,10 @@ int main()
     window.draw(E1d);
     window.draw(E1r);
     window.draw(E1s);
+    window.draw(E2a);
+    window.draw(E2d);
+    window.draw(E2r);
+    window.draw(E2s);
     window.draw(lfofrt);
 
     sf::Shader Lfoshdr; //shader för att visa vågformen på LFOn
@@ -340,11 +344,6 @@ int main()
         Env2sdd.Draw(window);
         Env2sdr.Draw(window);
         Env2sds.Draw(window);
-
-        window.draw(E2a);
-        window.draw(E2d);
-        window.draw(E2r);
-        window.draw(E2s);
 
         Vcasd.Draw(window);
 
