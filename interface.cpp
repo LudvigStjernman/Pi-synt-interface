@@ -73,8 +73,7 @@ struct Slider //klass för slider
                     strsclr = std::to_string(seccol.x) + "f, " + std::to_string(seccol.y) + "f, " + std::to_string(seccol.z) + "f",
                     strhsz = std::to_string(headsz) + ".0"; //gör om färgerna till strings
 
-        std::string shdrcde = "#version 140\n" //kod för shadern som körs på grafikkortet
-                              "out vec4 FragColor;\n"
+        std::string shdrcde = "#version 120\n" //kod för shadern som körs på grafikkortet
                               "uniform vec2 mpos;\n"
                               "void main(){\n"
                               "vec3 pcol = vec3(" +
@@ -84,7 +83,7 @@ struct Slider //klass för slider
                                         "vec2 ifc = (vec2(1, -1) * gl_FragCoord.xy + vec2(0, 480));\n"
                                         "vec3 clr = mix(pcol, scol, clamp(distance(ifc." +
                               (horizontal ? "x" : "y") + ", mpos." + (horizontal ? "x" : "y") + "), 0.f, " + strhsz + ") / " + strhsz + ");\n"
-                                                                                                                                        "FragColor = vec4(clr, 1.f);\n"
+                                                                                                                                        "gl_FragColor = vec4(clr, 1.f);\n"
                                                                                                                                         "}";
         if (!shdr.loadFromMemory(shdrcde, sf::Shader::Fragment)) //ladda shadern
             std::cout << "Fragment shader error";
@@ -144,7 +143,7 @@ int main()
     Slider::cs = 0;
     sf::ContextSettings cs; //fönsterkontext (gör att man kan ha fler inställningar till fönstret)
     cs.antialiasingLevel = 8; //sätt antialiasing-nivån till 8
-    sf::RenderWindow window(sf::VideoMode(800, 480), "Synt", sf::Style::Default, cs); //skapa fönstret med matchande storlek till fönstret
+    sf::RenderWindow window(sf::VideoMode(800, 480), "Synt", sf::Style::Fullscreen, cs); //skapa fönstret med matchande storlek till fönstret
     sf::RectangleShape Env1s(sf::Vector2f(225, 125)), //skapa rektanglar med bestämda storlekar som bakgrunder till olika funktioner
         Env2s(sf::Vector2f(225, 125)),
         Vcfs(sf::Vector2f(225, 125)),
@@ -300,19 +299,18 @@ int main()
 
     sf::Shader Lfoshdr; //shader för att visa vågformen på LFOn
     Lfoshdr.loadFromMemory(
-        "#version 140\n"\
-        "out vec4 FragColor;\n"\
+        "#version 120\n"\
         "uniform int state;"\
         "uniform float freq;\n"\
         "void main(){\n"\
-        "FragColor = vec4(0, 0, 0, 1);\n"\
+        "gl_FragColor = vec4(0, 0, 0, 1);\n"\
         "vec2 px = gl_FragCoord.xy - vec2(25, 24);"\
         "if(state == 0)\n"\
-        "FragColor += vec4(11/255, 1, 1, 1) * int(abs((mod(int(floor(px.x/(90*freq))), 2)) * 127 - px.y) <= 5 || mod(int(px.x), 90*freq) <= 4);\n"\
+        "gl_FragColor += vec4(11/255, 1, 1, 1) * int(abs((mod(int(floor(px.x/(90*freq))), 2)) * 127 - px.y) <= 5 || mod(int(px.x), 90*freq) <= 4);\n"\
         "else if (state == 1)\n"\
-        "FragColor += vec4(11/255, 1, 1, 1) * int(abs(abs(mod(px.x,freq*90) - freq*90/2)*2/(freq*90) - (px.y-10)*1.2/125.f) <= 0.1f);\n"\
+        "gl_FragColor += vec4(11/255, 1, 1, 1) * int(abs(abs(mod(px.x,freq*90) - freq*90/2)*2/(freq*90) - (px.y-10)*1.2/125.f) <= 0.1f);\n"\
         "else if(state == 2)\n"\
-        "FragColor += vec4(11/255, 1, 1, 1) * int(abs(59.5*sin(px.x/(90*freq)) - (px.y - 63)) <= 4);\n"\
+        "gl_FragColor += vec4(11/255, 1, 1, 1) * int(abs(59.5*sin(px.x/(90*freq)) - (px.y - 63)) <= 4);\n"\
         "}"
         ,
         sf::Shader::Fragment);
@@ -325,6 +323,8 @@ int main()
             if (event.type == sf::Event::Closed)
                 window.close();
         }
+if(sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Escape))
+window.close();
 
         Lfoshdr.setUniform("state", 2); //sätt vågform och frekvens till LFO-shadern
         Lfoshdr.setUniform("freq", Lfosld.Value + 0.1f);
