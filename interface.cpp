@@ -3,6 +3,7 @@
 #include <chrono>
 #include <algorithm>
 #include <SFML/Graphics.hpp> //Library för grafik
+#include "socket.h"
 #include "font.h" //data för typsnittet för texten
 #include "midi.h" //klass för att hantera midi
 

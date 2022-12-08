@@ -3,8 +3,9 @@ void midi::cleanup()
 {
     delete midin;
 }
-midi::midicallback(double dtime, std::vector<unsigned char> *message, void *userData){
-    
+void midi::midicallback(double dtime, std::vector<unsigned char> *message, void *userData){
+    std::string str(message->begin(), message->end());
+    std::cout << str;
 }
 midi::midi()
 {
@@ -17,7 +18,7 @@ midi::midi()
         error.printMessage();
         exit(EXIT_FAILURE);
     }
-    midin->setCallback((RtMidiIn::RtMidiCallback)&midicallback);
+    midin->setCallback(&midicallback, (void*) this);
     portnr = midin->getPortCount();
     try
     {
@@ -29,8 +30,4 @@ midi::midi()
         cleanup();
     }
     printf("Midi klar");
-}
-midi::~midi()
-{
-    cleanup();
 }
