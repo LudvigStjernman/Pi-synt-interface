@@ -341,6 +341,9 @@ int main()
     window.draw(E2s);
     window.draw(lfofrt);
 
+    midi mdi;
+
+
     sf::Shader Lfoshdr; //shader för att visa vågformen på LFOn
     Lfoshdr.loadFromMemory(
         "#version 120\n"\
