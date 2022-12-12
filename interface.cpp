@@ -138,13 +138,56 @@ bool Envelope::noteDown = false;
 int Slider::sc = 0;
 int Slider::cs = 0;
 
+struct Button{
+    enum Usage{
+        press,
+        toggle
+    };
+    sf::RectangleShape shp;
+    sf::Text btntxt;
+    std::vector<Button*> latchBtns;
+    template <class... Buttons>
+    void BindLatch(Buttons&&...  latch){
+        (latchBtns.push_back(&latch), ...);
+        for(auto r : latchBtns){
+            if(std::find(r->latchBtns.begin(), r->latchBtns.end(), this) != r->latchBtns.end())
+                r->latchBtns.push_back(this);
+        }
+    }
+    void draw(sf::RenderWindow &wnd){
+        if(fRen = !fRen){
+            wnd.draw(shp);
+            wnd.draw(btntxt);
+        }
+
+        if(shp.getGlobalBounds().contains((sf::Vector2f)sf::Mouse::getPosition(wnd))){
+            shp.setOutlineThickness(2);
+            if(sf::Mouse::isButtonPressed(sf::Mouse::Button::Left) && !mprs){
+                
+            }
+        } else shp.setOutlineThickness(0);
+    }
+    Button(std::string text, Usage state, sf::Color primCol, sf::Color secCol, int x, int y, int w, int h){
+        shp.setOutlineColor(prcol);
+    }
+    bool getIfPressed(){
+        if(_state == Usage::press) return mprs && !(mprs = false);
+        if(_state == Usage::toggle) return mprs;
+    }
+    private:
+    Usage _state;
+    sf::Color prcol, sccol, trclr;
+    bool mprs = false;
+    bool fRen = false;
+};
+
 int main()
 {
     Slider::sc = 0;
     Slider::cs = 0;
     sf::ContextSettings cs; //fönsterkontext (gör att man kan ha fler inställningar till fönstret)
     cs.antialiasingLevel = 8; //sätt antialiasing-nivån till 8
-    sf::RenderWindow window(sf::VideoMode(800, 480), "Synt", sf::Style::Fullscreen, cs); //skapa fönstret med matchande storlek till fönstret
+    sf::RenderWindow window(sf::VideoMode(800, 480), "Synt"/*, sf::Style::Fullscreen, cs*/); //skapa fönstret med matchande storlek till fönstret
     sf::RectangleShape Env1s(sf::Vector2f(225, 125)), //skapa rektanglar med bestämda storlekar som bakgrunder till olika funktioner
         Env2s(sf::Vector2f(225, 125)),
         Vcfs(sf::Vector2f(225, 125)),
