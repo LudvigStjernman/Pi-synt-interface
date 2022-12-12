@@ -187,7 +187,7 @@ int main()
     Slider::cs = 0;
     sf::ContextSettings cs; //fönsterkontext (gör att man kan ha fler inställningar till fönstret)
     cs.antialiasingLevel = 8; //sätt antialiasing-nivån till 8
-    sf::RenderWindow window(sf::VideoMode(800, 480), "Synt"/*, sf::Style::Fullscreen, cs*/); //skapa fönstret med matchande storlek till fönstret
+    sf::RenderWindow window(sf::VideoMode(800, 480), "Synt", sf::Style::Fullscreen, cs); //skapa fönstret med matchande storlek till fönstret
     sf::RectangleShape Env1s(sf::Vector2f(225, 125)), //skapa rektanglar med bestämda storlekar som bakgrunder till olika funktioner
         Env2s(sf::Vector2f(225, 125)),
         Vcfs(sf::Vector2f(225, 125)),
@@ -341,6 +341,7 @@ int main()
     window.draw(E2s);
     window.draw(lfofrt);
 
+    
     midi mdi;
 
 
