@@ -4,8 +4,15 @@ struct midi
 {
     RtMidiIn *midin; //midi-mottagar-objekt
     std::string portnamn = ""; //namn för midi-port
+    std::vector<std::thread> listenthreads;
+    std::vector<unsigned char> message;
+    void listener();
+    void init();
+    bool run = true;
+    double stamp = 0;
+    unsigned int nBytes = 2, i = 0;
     unsigned int portnr = 0; //nummer för port
-    static void midicallback(double, std::vector<unsigned char>*, void*); //funktion som tillkallas för varje not
     void cleanup(); //friar allt minne
     midi(); //kontruktör
+    ~midi();
 };
