@@ -342,7 +342,7 @@ int main()
     window.draw(lfofrt);
 
     
-    midi mdi;
+    midi mdi = midi();
 
     SocketNS::init();
     
@@ -375,6 +375,7 @@ int main()
         }
 if(sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Escape))
 window.close();
+        //std::cout << std::string(mdi.message.begin(), mdi.message.end()) + '\n';
 
         Lfoshdr.setUniform("state", 2); //sätt vågform och frekvens till LFO-shadern
         Lfoshdr.setUniform("freq", Lfosld.Value + 0.1f);
