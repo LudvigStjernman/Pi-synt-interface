@@ -8,6 +8,7 @@
 			"args": [
 				"-fdiagnostics-color=always",
 				"-g",
+				"-D__LINUX_ALSA__",
 				"${file}",
 				"-o",
 				"${fileDirname}/${fileBasenameNoExtension}",
@@ -20,7 +21,9 @@
 				"midi.h",
 				"RtMidi.h",
 				"RtMidi.cpp",
-				"socket.h"
+				"socket.h",
+				"-lasound",
+				"-lpthread"
 			],
 			"options": {
 				"cwd": "${fileDirname}"

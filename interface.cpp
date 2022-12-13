@@ -344,7 +344,8 @@ int main()
     
     midi mdi;
 
-
+    SocketNS::init();
+    
     sf::Shader Lfoshdr; //shader för att visa vågformen på LFOn
     Lfoshdr.loadFromMemory(
         "#version 120\n"\
@@ -365,6 +366,7 @@ int main()
 
     while (window.isOpen()) //så länge fönstret är öppet
     {
+        SocketNS::send(SocketNS::command::ton, 'c');
         sf::Event event;
         while (window.pollEvent(event)) //kolla om fönstret har stängts
         {

@@ -9,22 +9,26 @@
 5. lågpass frekvens
 6. högpass frekvens
 */
+
 namespace SocketNS{
     sf::UdpSocket socket;
     char data[2] = {};
     unsigned short port = 54000;
-    sf::IpAddress addrss = "localhost";
+    sf::IpAddress addrss = sf::IpAddress::getLocalAddress();
+
     enum command {
-        ton,
+        ton = 49,
         volym,
         vågform,
         lågpassF,
         högpassF
     };
+
     void init(){
         if(socket.bind(port) != sf::Socket::Done){
             std::cout << "socket failed";
         }
+        socket.setBlocking(false);
 
     }
 
