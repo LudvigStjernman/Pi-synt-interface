@@ -3,6 +3,7 @@
 #include <chrono>
 #include <algorithm>
 #include <SFML/Graphics.hpp> //Library för grafik
+#include <vector>
 #include "socket.h"
 #include "font.h" //data för typsnittet för texten
 #include "midi.h" //klass för att hantera midi
@@ -17,8 +18,10 @@ struct Slider //klass för slider
     sf::Vector3f seccol; //bakgrundsfärg
     sf::Vector2i pos; //position för det över vänstra hurnet av slidern
     sf::Vector2f size; //storlek i x och y-led
+    std::function<void(float)> clbkfnc;
     static int sc, cs; //sc är antalet sliders på skärmen, cs är den slidern som förflyttas. static betyder att värdena delas av alla sliders
     int m_sc = 0; //sliderns "id"
+    float olvl = 0;
     bool horizontal = true, ran = false, locked = false; //horizontal bestämmer på vilket led slidern ska röra sig, ran håller koll på om "draw"-funktionen redan har körts eller inte, locked bestämmer om slidern används sen tidigare
     void Draw(sf::RenderWindow &wnd) //rita ut slidern på skärmen
     {
@@ -44,6 +47,10 @@ struct Slider //klass för slider
                     } else{
                         Value = 1.f - std::clamp((float)sf::Mouse::getPosition(wnd).y - pos.y, 0.f, size.y) / size.y; //sätt sliderns värde relativt till musesn y-värde
                     }
+                    if(Value != olvl){
+                        olvl = Value;
+                        clbkfnc(Value);
+                    }
                 }
                 locked = true;
             }
@@ -57,8 +64,9 @@ struct Slider //klass för slider
         }
         wnd.draw(shp, &shdr); //rita slidern på skärmen med shadern
     }
-    Slider(int w, int h, int x, int y, sf::Vector3f prmcol, sf::Vector3f scdcol) //konstruktör för slidern
+    Slider(int w, int h, int x, int y, sf::Vector3f prmcol, sf::Vector3f scdcol, std::function<void(float)> callback = [](float){}) //konstruktör för slidern
     {
+        clbkfnc = callback;
         m_sc = ++sc;
         horizontal = w > h;
         primcol = prmcol;
@@ -96,10 +104,13 @@ struct Envelope //klass för envelope
     sf::Vertex vs[5]; //ändpunkterna för linjerna som ritas ut
     float *a = 0, *d = 0, *s = 0, *r = 0; //pekare till värdena för attack, decay, sustain och release
     float w = 0, h = 0; //bredd och höjd
+    float* controllingVar = nullptr;
     sf::Vector2i pos; //position
     static bool noteDown; //om en not är nedtryckt
-    bool internal_notedown = false; //om en not är registrerad
-    int amplitude = 0; //amplitud
+    bool m_noteDown = false, relse = false;
+    std::chrono::_V2::system_clock::time_point att;
+    std::chrono::_V2::system_clock::time_point rel;
+    float amplitude = 0; //amplitud
     void BindParams(float *_a, float *_d, float *_s, float *_r) //sätt alla parametrar till addresser
     {
         a = _a;
@@ -114,9 +125,50 @@ struct Envelope //klass för envelope
         vs[3].position = sf::Vector2f(vs[2].position.x + w / 4, vs[2].position.y);
         vs[4].position = sf::Vector2f(vs[3].position.x + w * (*r) / 4, pos.y + h);
         wnd.draw(vs, 5, sf::LineStrip); //rita ut
+        if(!m_noteDown && noteDown){
+            m_noteDown = true;
+            att = std::chrono::high_resolution_clock::now();
+        }
+
+        if(noteDown && !m_noteDown){
+            m_noteDown = true;
+            att = std::chrono::high_resolution_clock::now();
+        }
+        if(noteDown)
+            *controllingVar = rise() * amplitude;
+        *controllingVar = fall() * amplitude;
     }
-    Envelope(int _w, int _h, int x, int y) //konstruktör
+    float rise(){
+        auto delta = att - std::chrono::high_resolution_clock::now();
+        auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(delta).count();
+        
+        if(ms < 2000 * (*a)){
+            return ms * (*a)/2000;
+        }
+        if(ms < 4000 * (*d)){
+            return  ms * (*d) / 4000;
+        }
+        if(noteDown)
+            return *s;
+        return 0;
+    }
+    float fall(){
+        auto reldelta = rel - std::chrono::high_resolution_clock::now();
+        auto relms = std::chrono::duration_cast<std::chrono::milliseconds>(reldelta).count();
+        if(!noteDown && m_noteDown){
+            m_noteDown = false;
+            relse = true;
+            rel = std::chrono::high_resolution_clock::now();
+        }
+
+        if(relms < 2000 && relse)
+            return std::clamp((*s) - (*s)*relms / 2000, 0.f, 1.f);
+        relse = false;
+        return 0;
+    }
+    Envelope(int _w, int _h, int x, int y, float* cvar) //konstruktör
     {
+        controllingVar = cvar;
         pos = sf::Vector2i(x, y);
         w = _w;
         h = _h;
@@ -181,13 +233,48 @@ struct Button{
     bool fRen = false;
 };
 
+namespace notes{
+    struct Not{
+        uint8_t on = 0, ton = 0, vel = 0;
+        bool operator==(Not n){
+            return n.ton == ton;
+        }
+    };
+    enum runmode{
+        single,
+        arp
+    };
+    runmode rm;
+    std::mutex notmut;
+    std::vector<Not> Noter;
+
+    void nynot(uint8_t on, uint8_t ton, uint8_t vel){
+        std::lock_guard<std::mutex> lock(notmut);
+        Not nb;
+        nb.on = on;
+        nb.ton = ton;
+        nb.vel = vel;
+
+        if(std::find(Noter.begin(), Noter.end(), nb) != Noter.end())
+        //std::cout << (int)ton << '\n';
+        SocketNS::send(SocketNS::command::ton, ton);
+    }
+}
+
+float env1par = 0, env2par = 0;
+
+void sendvol(float vol){
+    SocketNS::send(SocketNS::command::volym, (vol + env1par) * 100);
+    //std::this_thread::sleep_for(std::chrono::milliseconds(10));
+}
+
 int main()
 {
     Slider::sc = 0;
     Slider::cs = 0;
     sf::ContextSettings cs; //fönsterkontext (gör att man kan ha fler inställningar till fönstret)
     cs.antialiasingLevel = 8; //sätt antialiasing-nivån till 8
-    sf::RenderWindow window(sf::VideoMode(800, 480), "Synt", sf::Style::Fullscreen, cs); //skapa fönstret med matchande storlek till fönstret
+    sf::RenderWindow window(sf::VideoMode(800, 480), "Synt", sf::Style::Default, cs); //skapa fönstret med matchande storlek till fönstret
     sf::RectangleShape Env1s(sf::Vector2f(225, 125)), //skapa rektanglar med bestämda storlekar som bakgrunder till olika funktioner
         Env2s(sf::Vector2f(225, 125)),
         Vcfs(sf::Vector2f(225, 125)),
@@ -200,6 +287,7 @@ int main()
 
     sf::Vector3f pcol(11, 255, 255), scol(20, 20, 20); //sätt primärfärg (ljusblå) och bakgrundsfärg (grå)
 
+
     Slider Env1sda(225, 20, 550, 155, pcol, scol), //sliders till alla parametrar
         Env1sdd(225, 20, 550, 180, pcol, scol),
         Env1sdr(225, 20, 550, 205, pcol, scol),
@@ -208,12 +296,13 @@ int main()
         Env2sdd(225, 20, 550, 280, pcol, scol),
         Env2sdr(225, 20, 550, 305, pcol, scol),
         Env2sds(20, 125, 525, 330, pcol, scol),
-        Vcasd(20, 405, 430, 25, pcol, scol),
-        Lfosld(225, 20, 25, 305, pcol, scol);
+        Vcasd(20, 405, 430, 25, pcol, scol, sendvol),
+        Lfosld(225, 20, 25, 305, pcol, scol),
+        VcaAms(20, 405, 455, 25, pcol, scol);
 
-    Envelope Env1(227, 123, 551, 26), //envelopes
-        Env2(227, 123, 551, 331);
-
+    Envelope Env1(227, 123, 551, 26, &env1par), //envelopes
+        Env2(227, 123, 551, 331, &env2par);
+    
     olS1.setFillColor(sf::Color(50, 50, 50)); //sätt ut allt med färger och positioner
     olS1.setPosition(0, 0);
 
@@ -342,7 +431,7 @@ int main()
     window.draw(lfofrt);
 
     
-    midi mdi = midi();
+    midi mdi = midi(notes::nynot);
 
     SocketNS::init();
     
@@ -366,7 +455,7 @@ int main()
 
     while (window.isOpen()) //så länge fönstret är öppet
     {
-        SocketNS::send(SocketNS::command::ton, 'c');
+        //SocketNS::send(SocketNS::command::ton, 'c');
         sf::Event event;
         while (window.pollEvent(event)) //kolla om fönstret har stängts
         {
@@ -397,6 +486,7 @@ window.close();
         Env2sds.Draw(window);
 
         Vcasd.Draw(window);
+        //VcaAms.Draw(window);
 
         Env1.Draw(window);
         Env2.Draw(window);

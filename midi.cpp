@@ -3,22 +3,22 @@ void midi::cleanup()
 {
     delete midin;
 }
-void midi::listener(){
+void midi::listener(std::function<void(uint8_t, uint8_t, uint8_t)> callback){
     std::cout << "run\n";
     while ( run ) {
         message.clear();
         stamp = midin->getMessage(&message);
         nBytes = message.size();
-        for (i = 0; i < nBytes; i++)
-            std::cout << "Byte " << i << " = " << (int)message[i] << ", ";
-        if (nBytes > 0)
-            std::cout << "stamp = " << stamp << std::endl;
+        //callbackfun(message[0], message[1], message[2]);
+        if(message.size())
+            callback(message[0], message[1], message[2]);
         // Sleep for 10 milliseconds ... platform-dependent.
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
   }
 
 }
-void midi::init(){
+void midi::init(std::function<void(uint8_t, uint8_t, uint8_t)> callback){
+    int port = 0;
     try
     {
         midin = new RtMidiIn();
@@ -30,9 +30,14 @@ void midi::init(){
     }
     portnr = midin->getPortCount();
     std::cout << "Portnr: " <<portnr << '\n';
+    int nr = 0;
     try
     {
-        portnamn = midin->getPortName(0);
+        for(int i = 0; i < portnr; i++){
+            portnamn = midin->getPortName(i);
+            if(!portnamn.find("Through") != std::string::npos)
+                nr = i;
+        }
         std::cout << "Portnamn: " << portnamn << '\n';
     }
     catch (RtMidiError &error)
@@ -41,14 +46,14 @@ void midi::init(){
         error.printMessage();
         cleanup();
     }
-    midin->openPort(1);
+    midin->openPort(nr);
     printf("Midi klar\n");
-    listener();
+    listener(callback);
 }
 
-midi::midi()
+midi::midi(std::function<void(uint8_t, uint8_t, uint8_t)> callback)
 {
-    listenthreads.push_back(std::thread(&midi::init, this));
+    listenthreads.push_back(std::thread(&midi::init, this, callback));
 }
 
 midi::~midi(){
